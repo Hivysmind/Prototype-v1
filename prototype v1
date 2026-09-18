@@ -1,0 +1,733 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+--------------------------------------------------
+-- SETTINGS
+--------------------------------------------------
+
+local AIM_ENABLED = false
+
+local ESP_GUARD_ENABLED = false
+local ESP_SCP_ENABLED = false
+
+--------------------------------------------------
+-- SCREEN GUI
+--------------------------------------------------
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PrototypeUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+--------------------------------------------------
+-- MAIN FRAME
+--------------------------------------------------
+
+local frame = Instance.new("Frame")
+
+frame.Size = UDim2.fromOffset(280, 300)
+
+frame.Position = UDim2.fromScale(0.5, 0.5)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+
+frame.BackgroundColor3 =
+    Color3.fromRGB(30, 30, 35)
+
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 8)
+frameCorner.Parent = frame
+
+--------------------------------------------------
+-- DRAGGING
+--------------------------------------------------
+
+local dragging = false
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState ==
+                Enum.UserInputState.End then
+
+                dragging = false
+
+            end
+
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if dragging and (
+        input.UserInputType ==
+            Enum.UserInputType.MouseMovement
+        or input.UserInputType ==
+            Enum.UserInputType.Touch
+    ) then
+
+        local delta =
+            input.Position - dragStart
+
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+--------------------------------------------------
+-- TITLE
+--------------------------------------------------
+
+local title = Instance.new("TextLabel")
+
+title.Size =
+    UDim2.new(1, -20, 0, 32)
+
+title.Position =
+    UDim2.fromOffset(10, 5)
+
+title.BackgroundTransparency = 1
+
+title.TextColor3 =
+    Color3.new(1, 1, 1)
+
+title.TextSize = 17
+title.Font = Enum.Font.GothamBold
+
+title.Text = "Prototype"
+title.Parent = frame
+
+--------------------------------------------------
+-- SCROLLING FRAME
+--------------------------------------------------
+
+local scrollFrame =
+    Instance.new("ScrollingFrame")
+
+scrollFrame.Size =
+    UDim2.new(1, -12, 1, -45)
+
+scrollFrame.Position =
+    UDim2.fromOffset(6, 40)
+
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+
+scrollFrame.ScrollBarThickness = 6
+
+scrollFrame.ScrollBarImageColor3 =
+    Color3.fromRGB(100, 100, 110)
+
+scrollFrame.CanvasSize =
+    UDim2.new(0, 0, 0, 0)
+
+scrollFrame.AutomaticCanvasSize =
+    Enum.AutomaticSize.Y
+
+scrollFrame.ScrollingDirection =
+    Enum.ScrollingDirection.Y
+
+scrollFrame.Active = true
+
+scrollFrame.Parent = frame
+
+--------------------------------------------------
+-- CONTENT FRAME
+--------------------------------------------------
+
+local content =
+    Instance.new("Frame")
+
+content.Size =
+    UDim2.new(1, -10, 0, 0)
+
+content.Position =
+    UDim2.fromOffset(5, 0)
+
+content.BackgroundTransparency = 1
+
+content.AutomaticSize =
+    Enum.AutomaticSize.Y
+
+content.Parent = scrollFrame
+
+--------------------------------------------------
+-- VERTICAL LAYOUT
+--------------------------------------------------
+
+local layout =
+    Instance.new("UIListLayout")
+
+layout.Padding =
+    UDim.new(0, 7)
+
+layout.HorizontalAlignment =
+    Enum.HorizontalAlignment.Center
+
+layout.SortOrder =
+    Enum.SortOrder.LayoutOrder
+
+layout.Parent = content
+
+--------------------------------------------------
+-- BUTTON CREATOR
+--------------------------------------------------
+
+local function createButton(text)
+
+    local button =
+        Instance.new("TextButton")
+
+    button.Size =
+        UDim2.new(1, -8, 0, 40)
+
+    button.BackgroundColor3 =
+        Color3.fromRGB(55, 55, 65)
+
+    button.TextColor3 =
+        Color3.new(1, 1, 1)
+
+    button.TextSize = 14
+    button.Text = text
+
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = true
+
+    button.Parent = content
+
+    local corner =
+        Instance.new("UICorner")
+
+    corner.CornerRadius =
+        UDim.new(0, 6)
+
+    corner.Parent = button
+
+    return button
+end
+
+--------------------------------------------------
+-- AIM ASSIST
+--------------------------------------------------
+
+local aimButton =
+    createButton("Aim Assist: OFF")
+
+aimButton.MouseButton1Click:Connect(function()
+
+    AIM_ENABLED =
+        not AIM_ENABLED
+
+    if AIM_ENABLED then
+
+        aimButton.Text =
+            "Aim Assist: ON"
+
+        aimButton.BackgroundColor3 =
+            Color3.fromRGB(35, 110, 70)
+
+    else
+
+        aimButton.Text =
+            "Aim Assist: OFF"
+
+        aimButton.BackgroundColor3 =
+            Color3.fromRGB(55, 55, 65)
+
+    end
+
+end)
+
+--------------------------------------------------
+-- TARGET LABEL
+--------------------------------------------------
+
+local selectedLabel =
+    Instance.new("TextLabel")
+
+selectedLabel.Size =
+    UDim2.new(1, -8, 0, 24)
+
+selectedLabel.BackgroundTransparency = 1
+
+selectedLabel.TextColor3 =
+    Color3.fromRGB(200, 200, 200)
+
+selectedLabel.TextSize = 13
+
+selectedLabel.Text =
+    "Target: None"
+
+selectedLabel.TextXAlignment =
+    Enum.TextXAlignment.Left
+
+selectedLabel.Parent = content
+
+--------------------------------------------------
+-- SEARCH BOX
+--------------------------------------------------
+
+local searchBox =
+    Instance.new("TextBox")
+
+searchBox.Size =
+    UDim2.new(1, -8, 0, 38)
+
+searchBox.BackgroundColor3 =
+    Color3.fromRGB(42, 42, 50)
+
+searchBox.TextColor3 =
+    Color3.new(1, 1, 1)
+
+searchBox.PlaceholderColor3 =
+    Color3.fromRGB(150, 150, 150)
+
+searchBox.PlaceholderText =
+    "Search player or team..."
+
+searchBox.TextSize = 13
+
+searchBox.ClearTextOnFocus = false
+searchBox.Text = ""
+
+searchBox.BorderSizePixel = 0
+
+searchBox.Parent = content
+
+local searchCorner =
+    Instance.new("UICorner")
+
+searchCorner.CornerRadius =
+    UDim.new(0, 6)
+
+searchCorner.Parent = searchBox
+
+--------------------------------------------------
+-- PLAYER LIST
+--------------------------------------------------
+
+local collapseButton =
+    createButton("▲  Player List")
+
+--------------------------------------------------
+-- ESP GUARD
+--------------------------------------------------
+
+local guardButton =
+    createButton("ESP Guard: OFF")
+
+--------------------------------------------------
+-- ESP SCP
+--------------------------------------------------
+
+local scpButton =
+    createButton("ESP Scp: OFF")
+
+--------------------------------------------------
+-- MINIGUN
+--------------------------------------------------
+
+local minigunButton =
+    createButton("Get Minigun")
+
+--------------------------------------------------
+-- M249
+--------------------------------------------------
+
+local m249Button =
+    createButton("Get M249")
+
+--------------------------------------------------
+-- WEAPON FUNCTION
+--------------------------------------------------
+
+local function getGun(gunName)
+
+    local EquipGun =
+        ReplicatedStorage:WaitForChild(
+            "EquipGun"
+        )
+
+    EquipGun:FireServer(gunName)
+
+end
+
+minigunButton.MouseButton1Click:Connect(function()
+
+    getGun("Minigun")
+
+end)
+
+m249Button.MouseButton1Click:Connect(function()
+
+    getGun("M249")
+
+end)
+
+--------------------------------------------------
+-- ESP FOLDER
+--------------------------------------------------
+
+local espFolder =
+    Instance.new("Folder")
+
+espFolder.Name = "ESP"
+espFolder.Parent = screenGui
+
+--------------------------------------------------
+-- REMOVE ESP
+--------------------------------------------------
+
+local function removeESP(targetPlayer)
+
+    local highlight =
+        espFolder:FindFirstChild(
+            tostring(targetPlayer.UserId)
+        )
+
+    if highlight then
+        highlight:Destroy()
+    end
+
+end
+
+--------------------------------------------------
+-- CREATE ESP
+--------------------------------------------------
+
+local function createESP(
+    targetPlayer,
+    color
+)
+
+    if targetPlayer == player then
+        return
+    end
+
+    local character =
+        targetPlayer.Character
+
+    if not character then
+        return
+    end
+
+    local existing =
+        espFolder:FindFirstChild(
+            tostring(targetPlayer.UserId)
+        )
+
+    if existing then
+
+        existing.Adornee =
+            character
+
+        existing.FillColor =
+            color
+
+        existing.OutlineColor =
+            color
+
+        return
+
+    end
+
+    local highlight =
+        Instance.new("Highlight")
+
+    highlight.Name =
+        tostring(targetPlayer.UserId)
+
+    highlight.Adornee =
+        character
+
+    highlight.FillColor =
+        color
+
+    highlight.OutlineColor =
+        color
+
+    highlight.FillTransparency =
+        0.65
+
+    highlight.OutlineTransparency =
+        0
+
+    highlight.DepthMode =
+        Enum.HighlightDepthMode.AlwaysOnTop
+
+    highlight.Parent =
+        espFolder
+
+end
+
+--------------------------------------------------
+-- UPDATE ESP
+--------------------------------------------------
+
+local function updateESP()
+
+    for _, targetPlayer in
+        ipairs(Players:GetPlayers()) do
+
+        if targetPlayer ~= player then
+
+            --------------------------------------------------
+            -- CASE-INSENSITIVE TEAM DETECTION
+            --------------------------------------------------
+
+            local teamName = ""
+
+            if targetPlayer.Team then
+
+                teamName =
+                    targetPlayer.Team.Name:lower()
+
+            end
+
+            local shouldShow = false
+
+            local color =
+                Color3.new(1, 1, 1)
+
+            --------------------------------------------------
+            -- GUARD
+            --------------------------------------------------
+
+            if ESP_GUARD_ENABLED
+                and teamName == "guard" then
+
+                shouldShow = true
+
+                color =
+                    Color3.fromRGB(
+                        50, 150, 255
+                    )
+
+            --------------------------------------------------
+            -- SCP
+            --------------------------------------------------
+
+            elseif ESP_SCP_ENABLED
+                and teamName == "scp" then
+
+                shouldShow = true
+
+                color =
+                    Color3.fromRGB(
+                        255, 70, 70
+                    )
+
+            end
+
+            if shouldShow then
+
+                createESP(
+                    targetPlayer,
+                    color
+                )
+
+            else
+
+                removeESP(
+                    targetPlayer
+                )
+
+            end
+        end
+    end
+end
+
+--------------------------------------------------
+-- GUARD ESP
+--------------------------------------------------
+
+guardButton.MouseButton1Click:Connect(function()
+
+    ESP_GUARD_ENABLED =
+        not ESP_GUARD_ENABLED
+
+    if ESP_GUARD_ENABLED then
+
+        guardButton.Text =
+            "ESP Guard: ON"
+
+        guardButton.BackgroundColor3 =
+            Color3.fromRGB(
+                35, 110, 70
+            )
+
+    else
+
+        guardButton.Text =
+            "ESP Guard: OFF"
+
+        guardButton.BackgroundColor3 =
+            Color3.fromRGB(
+                55, 55, 65
+            )
+
+    end
+
+    updateESP()
+
+end)
+
+--------------------------------------------------
+-- SCP ESP
+--------------------------------------------------
+
+scpButton.MouseButton1Click:Connect(function()
+
+    ESP_SCP_ENABLED =
+        not ESP_SCP_ENABLED
+
+    if ESP_SCP_ENABLED then
+
+        scpButton.Text =
+            "ESP Scp: ON"
+
+        scpButton.BackgroundColor3 =
+            Color3.fromRGB(
+                130, 45, 45
+            )
+
+    else
+
+        scpButton.Text =
+            "ESP Scp: OFF"
+
+        scpButton.BackgroundColor3 =
+            Color3.fromRGB(
+                55, 55, 65
+            )
+
+    end
+
+    updateESP()
+
+end)
+
+--------------------------------------------------
+-- PLAYER EVENTS
+--------------------------------------------------
+
+local function setupPlayer(targetPlayer)
+
+    if targetPlayer == player then
+        return
+    end
+
+    targetPlayer.CharacterAdded:Connect(
+        function()
+
+            task.wait(0.5)
+
+            updateESP()
+
+        end
+    )
+
+    targetPlayer:GetPropertyChangedSignal(
+        "Team"
+    ):Connect(function()
+
+        updateESP()
+
+    end)
+
+end
+
+Players.PlayerAdded:Connect(
+    setupPlayer
+)
+
+Players.PlayerRemoving:Connect(
+    function(targetPlayer)
+
+        removeESP(
+            targetPlayer
+        )
+
+    end
+)
+
+for _, targetPlayer in
+    ipairs(Players:GetPlayers()) do
+
+    setupPlayer(
+        targetPlayer
+    )
+
+end
+
+--------------------------------------------------
+-- CIRCLE / MOBILE TOGGLE
+--------------------------------------------------
+
+local toggleButton =
+    Instance.new("TextButton")
+
+toggleButton.Size =
+    UDim2.fromOffset(40, 40)
+
+toggleButton.Position =
+    UDim2.new(
+        0, 15,
+        0.5, 0
+    )
+
+toggleButton.AnchorPoint =
+    Vector2.new(0, 0.5)
+
+toggleButton.BackgroundColor3 =
+    Color3.fromRGB(45, 45, 55)
+
+toggleButton.TextColor3 =
+    Color3.new(1, 1, 1)
+
+toggleButton.TextSize = 20
+
+toggleButton.Text = "☰"
+
+toggleButton.BorderSizePixel = 0
+
+toggleButton.Parent = screenGui
+
+local toggleCorner =
+    Instance.new("UICorner")
+
+toggleCorner.CornerRadius =
+    UDim.new(1, 0)
+
+toggleCorner.Parent =
+    toggleButton
+
+toggleButton.MouseButton1Click:Connect(
+    function()
+
+        frame.Visible =
+            not frame.Visible
+
+    end
+)
